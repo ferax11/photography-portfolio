@@ -39,7 +39,9 @@ const IMAGE_SIZE_KEY = "portfolioImageSize";
 const params = new URLSearchParams(window.location.search);
 const categories = ["Todo", ...Object.keys(categoryFolders)];
 let activeCategory = params.get("category") || "Todo";
+if (!categories.includes(activeCategory)) activeCategory = "Todo";
 let visibleCount = PAGE_SIZE;
+let isAutoLoading = false;
 const mixedItemsByCategory = new Map();
 
 const categoryLabels = {
@@ -62,8 +64,8 @@ const categoryDescriptions = {
 const categoryDetails = {
   Todo: {
     label: "Portafolio",
-    title: "Trabajo comercial con dirección, color y orden.",
-    text: "Una selección limpia de fotografía comercial organizada por categorías: gastronomía, bebidas, producto, retrato e inmobiliaria.",
+    title: "Aquí puedes ver un poco de mi trabajo de fotografía.",
+    text: "Una selección para escanear rápido mi forma de trabajar: color, composición, detalle y dirección visual para marcas, comida, producto, retrato e interiores.",
     image: "dist/assets/portfolio/sobre-mi/fernando-alfaro/dsc07383.jpg",
     meta: "Fotografía comercial / El Salvador",
   },
@@ -104,6 +106,29 @@ const categoryDetails = {
   },
 };
 
+const portfolioIntroHighlights = [
+  {
+    image: "dist/assets/portfolio/gastronomia/kreef-variado/dsc00598.jpg",
+    label: "Gastronomía",
+    category: "Gastronomica",
+  },
+  {
+    image: "dist/assets/portfolio/producto/Varias/DSC05100-Mejorado-NR 2.jpg",
+    label: "Producto",
+    category: "Producto",
+  },
+  {
+    image: "dist/assets/portfolio/bebidas/bebidas/DSC03080.JPG",
+    label: "Bebidas",
+    category: "Bebidas",
+  },
+  {
+    image: "dist/assets/portfolio/inmobiliaria/urbanica/dsc01890-mejorado-nr.jpg",
+    label: "Interiores",
+    category: "Inmobiliaria",
+  },
+];
+
 function categoryLabel(category) {
   return categoryLabels[category] || category;
 }
@@ -127,6 +152,37 @@ function renderPortfolioIntro() {
   if (!portfolioIntro) return;
 
   const details = categoryDetails[activeCategory] || categoryDetails.Todo;
+  portfolioIntro.className = activeCategory === "Todo" ? "portfolio-intro portfolio-intro-featured" : "portfolio-intro";
+
+  if (activeCategory === "Todo") {
+    portfolioIntro.innerHTML = `
+      <div class="portfolio-intro-copy">
+        <p class="small-label">${details.label}</p>
+        <h1>${details.title}</h1>
+        <p>${details.text}</p>
+        <div class="portfolio-intro-actions">
+          <a class="outline-button" href="#portfolioGrid">Ver galería</a>
+          <a class="text-link" href="contacto.html">Cotizar proyecto</a>
+        </div>
+        <span>${details.meta}</span>
+      </div>
+      <div class="portfolio-intro-collage" aria-label="Muestra de fotografía de Fernando Alfaro">
+        ${portfolioIntroHighlights
+          .map(
+            (item, index) => `
+              <a href="portfolio.html?category=${encodeURIComponent(item.category)}" data-intro-category="${item.category}" class="portfolio-intro-tile tile-${index + 1}">
+                <img src="${optimizedPath(item.image)}" alt="${item.label} de Fernando Alfaro" loading="${index === 0 ? "eager" : "lazy"}" decoding="async" />
+                <span>${item.label}</span>
+              </a>
+            `
+          )
+          .join("")}
+      </div>
+    `;
+
+    return;
+  }
+
   portfolioIntro.innerHTML = `
     <figure class="portfolio-intro-image">
       <img src="${optimizedPath(details.image)}" alt="${details.label} de Fernando Alfaro" decoding="async" />
@@ -212,6 +268,57 @@ function updateUrl() {
   window.history.replaceState({}, "", query ? `portfolio.html?${query}` : "portfolio.html");
 }
 
+function syncFilterState({ scrollActive = false } = {}) {
+  filters?.querySelectorAll(".filter-button").forEach((item) => {
+    const isActive = item.dataset.category === activeCategory;
+    item.classList.toggle("active", isActive);
+    item.setAttribute("aria-pressed", isActive.toString());
+    if (isActive && scrollActive) item.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  });
+}
+
+function scrollToGallery() {
+  const portfolioSection = document.querySelector(".portfolio-section");
+  if (!portfolioSection) return;
+
+  const headerOffset = document.querySelector(".site-header")?.offsetHeight || 0;
+  const targetTop = portfolioSection.getBoundingClientRect().top + window.scrollY - headerOffset - 14;
+  window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+}
+
+function replaySoftRefresh(element) {
+  if (!element) return;
+  element.classList.remove("is-soft-refresh");
+  void element.offsetWidth;
+  element.classList.add("is-soft-refresh");
+  window.setTimeout(() => element.classList.remove("is-soft-refresh"), 340);
+}
+
+function refreshPortfolioView({ shouldScroll = false } = {}) {
+  renderPortfolioIntro();
+  renderPortfolio();
+  syncFilterState({ scrollActive: shouldScroll });
+  replaySoftRefresh(portfolioIntro);
+  replaySoftRefresh(grid);
+  if (shouldScroll) window.setTimeout(scrollToGallery, 80);
+}
+
+function setActiveCategory(category, options = {}) {
+  if (!categories.includes(category)) return;
+  const isSameCategory = activeCategory === category;
+  activeCategory = category;
+  visibleCount = PAGE_SIZE;
+  updateUrl();
+
+  if (isSameCategory) {
+    syncFilterState({ scrollActive: options.shouldScroll });
+    if (options.shouldScroll) scrollToGallery();
+    return;
+  }
+
+  refreshPortfolioView(options);
+}
+
 function renderPortfolio() {
   if (!grid) return;
 
@@ -255,31 +362,55 @@ function renderFilters() {
   if (!filters) return;
 
   filters.innerHTML = categories
-    .map((category) => `<button class="filter-button" type="button" data-category="${category}">${categoryLabel(category)}</button>`)
+    .map((category) => `<button class="filter-button" type="button" data-category="${category}" aria-pressed="false">${categoryLabel(category)}</button>`)
     .join("");
 
   filters.addEventListener("click", (event) => {
     const button = event.target.closest("[data-category]");
     if (!button) return;
-    activeCategory = button.dataset.category;
-    visibleCount = PAGE_SIZE;
-    updateUrl();
-    filters.querySelectorAll(".filter-button").forEach((item) => {
-      item.classList.toggle("active", item.dataset.category === activeCategory);
-    });
-    renderPortfolioIntro();
-    renderPortfolio();
+    setActiveCategory(button.dataset.category);
   });
 
-  filters.querySelectorAll(".filter-button").forEach((button) => {
-    button.classList.toggle("active", button.dataset.category === activeCategory);
-  });
+  syncFilterState();
 }
 
 function setupLoadMore() {
   loadMoreButton?.addEventListener("click", () => {
-    visibleCount += PAGE_SIZE;
+    loadNextPage();
+  });
+}
+
+function loadNextPage() {
+  if (!grid || isAutoLoading) return;
+
+  const items = getFilteredItems();
+  if (visibleCount >= items.length) return;
+
+  isAutoLoading = true;
+  loadMoreButton?.classList.add("is-loading");
+  visibleCount += PAGE_SIZE;
+
+  window.setTimeout(() => {
     renderPortfolio();
+    loadMoreButton?.classList.remove("is-loading");
+    isAutoLoading = false;
+  }, 120);
+}
+
+function setupPortfolioIntroLinks() {
+  portfolioIntro?.addEventListener("click", (event) => {
+    const categoryLink = event.target.closest("[data-intro-category]");
+    if (categoryLink) {
+      event.preventDefault();
+      setActiveCategory(categoryLink.dataset.introCategory, { shouldScroll: true });
+      return;
+    }
+
+    const galleryLink = event.target.closest('a[href="#portfolioGrid"]');
+    if (!galleryLink) return;
+
+    event.preventDefault();
+    scrollToGallery();
   });
 }
 
@@ -396,6 +527,7 @@ renderCategoryList();
 renderAboutGallery();
 setupImageSizeControl();
 setupLoadMore();
+setupPortfolioIntroLinks();
 setupCategoryLinks();
 setupMenu();
 setupContactLinks();
