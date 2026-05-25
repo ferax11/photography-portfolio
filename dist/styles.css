@@ -1,0 +1,13 @@
+body {
+  min-height: 100vh;
+}
+
+a {
+  transition: color 180ms ease, opacity 180ms ease;
+}
+
+input,
+textarea,
+button {
+  font: inherit;
+}

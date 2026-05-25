@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Portafolio - Fernando Alfaro</title>
+  <meta name="description" content="Portafolio fotográfico de Fernando Alfaro por categoría, proyecto y lugar." />
+  <link rel="icon" type="image/x-icon" href="dist/assets/favicon.ico" />
+  <link rel="stylesheet" href="dist/output.css" />
+  <link rel="stylesheet" href="styles.css?v=20260521g" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+</head>
+
+<body class="opacity-0 transition duration-500">
+  <header class="site-header">
+    <nav class="site-nav" aria-label="Principal">
+      <a href="index.html" class="brand">FERNANDO ALFARO</a>
+      <button id="menuButton" class="menu-button" type="button" aria-label="Abrir menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <div id="mainMenu" class="nav-links">
+        <a href="portfolio.html">Portafolio</a>
+        <span></span>
+        <a href="sobre-mi.html">Sobre mí</a>
+        <span></span>
+        <a href="contacto.html">Contacto</a>
+      </div>
+      <a id="quoteTopLink" class="outline-button" href="https://tally.so/r/eqMNNl" target="_blank" rel="noreferrer">Cotizar</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="portfolioIntro" class="portfolio-intro"></section>
+
+    <section class="portfolio-section">
+      <div class="portfolio-toolbar">
+        <div>
+          <p class="small-label">Categoría</p>
+          <div id="categoryFilters" class="filter-row"></div>
+        </div>
+        <label class="image-size-control" for="imageSizeControl">
+          <span>Tamaño de imagen</span>
+          <input id="imageSizeControl" type="range" min="240" max="520" step="20" value="360" />
+        </label>
+      </div>
+      <p id="galleryCount" class="gallery-count"></p>
+      <div id="portfolioGrid" class="portfolio-grid"></div>
+      <div class="load-more-wrap">
+        <button id="loadMoreButton" class="outline-button" type="button">Ver más</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© 2026 FERNANDO ALFARO</p>
+    <a href="contacto.html">Cotizar proyecto</a>
+  </footer>
+
+  <script src="dist/fade_in.js"></script>
+  <script src="dist/data.js?v=20260521"></script>
+  <script src="dist/portfolio.js?v=20260521g"></script>
+</body>
+
+</html>
