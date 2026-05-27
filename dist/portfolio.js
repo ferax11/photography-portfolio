@@ -41,8 +41,12 @@ const categories = ["Todo", ...Object.keys(categoryFolders)];
 let activeCategory = params.get("category") || "Todo";
 if (!categories.includes(activeCategory)) activeCategory = "Todo";
 let visibleCount = PAGE_SIZE;
-let isAutoLoading = false;
+let isLoadingMore = false;
+let portfolioTransitionId = 0;
 const mixedItemsByCategory = new Map();
+const preloadedImages = new Set();
+let masonryState = null;
+let masonryResizeTimer;
 
 const categoryLabels = {
   Todo: "Todo",
@@ -286,21 +290,48 @@ function scrollToGallery() {
   window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
 }
 
-function replaySoftRefresh(element) {
-  if (!element) return;
-  element.classList.remove("is-soft-refresh");
-  void element.offsetWidth;
-  element.classList.add("is-soft-refresh");
-  window.setTimeout(() => element.classList.remove("is-soft-refresh"), 340);
-}
+function refreshPortfolioView({ shouldScroll = false, updateIntro = false, preserveViewport = false, animated = true } = {}) {
+  const anchor = preserveViewport ? document.querySelector(".portfolio-section") : null;
+  const anchorTop = anchor?.getBoundingClientRect().top;
+  const transitionId = ++portfolioTransitionId;
+  const introStartHeight = portfolioIntro?.offsetHeight;
 
-function refreshPortfolioView({ shouldScroll = false } = {}) {
-  renderPortfolioIntro();
-  renderPortfolio();
   syncFilterState({ scrollActive: shouldScroll });
-  replaySoftRefresh(portfolioIntro);
-  replaySoftRefresh(grid);
-  if (shouldScroll) window.setTimeout(scrollToGallery, 80);
+
+  const applyUpdate = () => {
+    if (transitionId !== portfolioTransitionId) return;
+
+    if (portfolioIntro && animated && introStartHeight) {
+      portfolioIntro.style.height = `${introStartHeight}px`;
+    }
+
+    if (updateIntro) renderPortfolioIntro();
+    renderPortfolio({ animateItems: true });
+
+    if (portfolioIntro && animated && introStartHeight) {
+      const introEndHeight = portfolioIntro.scrollHeight;
+      portfolioIntro.style.height = `${introStartHeight}px`;
+      portfolioIntro.offsetHeight;
+      portfolioIntro.style.height = `${introEndHeight}px`;
+      window.setTimeout(() => {
+        if (transitionId === portfolioTransitionId) portfolioIntro.style.height = "";
+      }, 560);
+    }
+
+    if (anchor && typeof anchorTop === "number" && !shouldScroll) {
+      const nextTop = anchor.getBoundingClientRect().top;
+      window.scrollTo(0, window.scrollY + nextTop - anchorTop);
+    }
+
+    if (shouldScroll) window.setTimeout(scrollToGallery, 80);
+  };
+
+  if (animated) {
+    window.setTimeout(applyUpdate, 80);
+    return;
+  }
+
+  applyUpdate();
 }
 
 function setActiveCategory(category, options = {}) {
@@ -311,6 +342,7 @@ function setActiveCategory(category, options = {}) {
   updateUrl();
 
   if (isSameCategory) {
+    if (options.updateIntro) renderPortfolioIntro();
     syncFilterState({ scrollActive: options.shouldScroll });
     if (options.shouldScroll) scrollToGallery();
     return;
@@ -319,29 +351,156 @@ function setActiveCategory(category, options = {}) {
   refreshPortfolioView(options);
 }
 
-function renderPortfolio() {
+function portfolioCardMarkup(item, className = "") {
+  return `
+    <a class="portfolio-card${className ? ` ${className}` : ""}" href="${optimizedPath(item.image)}" data-fancybox="portfolio" data-caption="${categoryLabel(item.category)}">
+      <img src="${optimizedPath(item.image)}" alt="${categoryLabel(item.category)} de Fernando Alfaro" loading="lazy" decoding="async" />
+    </a>
+  `;
+}
+
+function preloadImage(src) {
+  if (!src || preloadedImages.has(src)) return;
+  preloadedImages.add(src);
+
+  const image = new Image();
+  image.decoding = "async";
+  image.src = src;
+}
+
+function preloadNextPortfolioPage(items = getFilteredItems()) {
+  if (!grid) return;
+
+  const start = visibleCount;
+  const end = Math.min(visibleCount + PAGE_SIZE, items.length);
+  items.slice(start, end).forEach((item) => preloadImage(optimizedPath(item.image)));
+}
+
+function updateGalleryMeta(visibleItemsCount, totalItemsCount) {
+  if (galleryCount) {
+    galleryCount.textContent = `Mostrando ${visibleItemsCount} de ${totalItemsCount} fotos`;
+  }
+
+  if (loadMoreButton) {
+    loadMoreButton.hidden = visibleItemsCount >= totalItemsCount;
+  }
+}
+
+function getMasonryGap(batch) {
+  const gap = parseFloat(window.getComputedStyle(batch).columnGap);
+  return Number.isFinite(gap) ? gap : 18;
+}
+
+function getMasonryColumns(batch, gap) {
+  const desiredWidth = parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue("--portfolio-image-size")) || 360;
+  const containerWidth = batch.clientWidth;
+  return Math.max(1, Math.floor((containerWidth + gap) / (desiredWidth + gap)));
+}
+
+function getMasonryMetrics(batch) {
+  const gap = getMasonryGap(batch);
+  const columns = getMasonryColumns(batch, gap);
+  const width = (batch.clientWidth - gap * (columns - 1)) / columns;
+  return { columns, gap, width };
+}
+
+function getCardHeight(card, width) {
+  const image = card.querySelector("img");
+  if (!image) return width;
+  const ratio = image.naturalWidth && image.naturalHeight ? image.naturalHeight / image.naturalWidth : 1;
+  return width * ratio;
+}
+
+function placeMasonryCards(cards, { reset = false } = {}) {
+  const batch = grid?.querySelector(".portfolio-batch");
+  if (!batch) return;
+
+  const metrics = getMasonryMetrics(batch);
+  const needsReset =
+    reset ||
+    !masonryState ||
+    masonryState.columns !== metrics.columns ||
+    Math.abs(masonryState.width - metrics.width) > 0.5;
+
+  if (needsReset) {
+    masonryState = {
+      columns: metrics.columns,
+      gap: metrics.gap,
+      width: metrics.width,
+      heights: Array(metrics.columns).fill(0),
+    };
+    batch.querySelectorAll(".portfolio-card").forEach((card) => {
+      delete card.dataset.masonryPlaced;
+    });
+  }
+
+  cards.forEach((card) => {
+    if (card.dataset.masonryPlaced === "true") return;
+    const image = card.querySelector("img");
+    if (image && !image.complete) return;
+
+    const columnIndex = masonryState.heights.indexOf(Math.min(...masonryState.heights));
+    const left = columnIndex * (masonryState.width + masonryState.gap);
+    const top = masonryState.heights[columnIndex];
+    const height = getCardHeight(card, masonryState.width);
+
+    card.style.width = `${masonryState.width}px`;
+    card.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+    card.dataset.masonryPlaced = "true";
+    if (card.classList.contains("is-new")) {
+      requestAnimationFrame(() => {
+        card.classList.add("is-visible");
+        const delay = parseFloat(card.style.getPropertyValue("--enter-delay")) || 0;
+        window.setTimeout(() => card.classList.remove("is-new", "is-visible"), delay + 520);
+      });
+    }
+    masonryState.heights[columnIndex] += height + masonryState.gap;
+  });
+
+  batch.style.height = `${Math.max(...masonryState.heights, 0)}px`;
+}
+
+function layoutMasonry({ reset = false } = {}) {
+  const cards = [...(grid?.querySelectorAll(".portfolio-card") || [])];
+  placeMasonryCards(cards, { reset });
+}
+
+function setupMasonryImageLoad(card) {
+  const image = card.querySelector("img");
+  if (!image || image.complete) {
+    placeMasonryCards([card]);
+    return;
+  }
+  image.addEventListener("load", () => placeMasonryCards([card]), { once: true });
+}
+
+function renderPortfolio({ animateItems = false } = {}) {
   if (!grid) return;
 
   const items = getFilteredItems();
   const visibleItems = items.slice(0, visibleCount);
+  masonryState = null;
 
-  grid.innerHTML = visibleItems
-    .map((item, index) => `
-      <a class="portfolio-card" href="${optimizedPath(item.image)}" data-fancybox="portfolio" data-caption="${categoryLabel(item.category)}">
-        <img src="${optimizedPath(item.image)}" alt="${categoryLabel(item.category)} de Fernando Alfaro" loading="lazy" decoding="async" />
-      </a>
-    `)
-    .join("");
-
-  if (galleryCount) {
-    galleryCount.textContent = `Mostrando ${visibleItems.length} de ${items.length} fotos`;
-  }
-
-  if (loadMoreButton) {
-    loadMoreButton.hidden = visibleItems.length >= items.length;
-  }
+  grid.innerHTML = `
+    <div class="portfolio-batch">
+      ${visibleItems.map((item) => portfolioCardMarkup(item)).join("")}
+    </div>
+  `;
+  updateGalleryMeta(visibleItems.length, items.length);
 
   if (window.Fancybox) Fancybox.bind("[data-fancybox='portfolio']", {});
+  grid.querySelectorAll(".portfolio-card").forEach(setupMasonryImageLoad);
+  requestAnimationFrame(() => layoutMasonry({ reset: true }));
+  window.setTimeout(() => preloadNextPortfolioPage(items), 250);
+}
+
+function setupMasonryResize() {
+  if (!grid) return;
+
+  window.addEventListener("resize", () => {
+    window.clearTimeout(masonryResizeTimer);
+    masonryResizeTimer = window.setTimeout(() => layoutMasonry({ reset: true }), 120);
+  });
 }
 
 function setupImageSizeControl() {
@@ -355,6 +514,7 @@ function setupImageSizeControl() {
   imageSizeControl.addEventListener("input", () => {
     document.documentElement.style.setProperty("--portfolio-image-size", `${imageSizeControl.value}px`);
     window.localStorage?.setItem(IMAGE_SIZE_KEY, imageSizeControl.value);
+    requestAnimationFrame(() => layoutMasonry({ reset: true }));
   });
 }
 
@@ -368,7 +528,7 @@ function renderFilters() {
   filters.addEventListener("click", (event) => {
     const button = event.target.closest("[data-category]");
     if (!button) return;
-    setActiveCategory(button.dataset.category);
+    setActiveCategory(button.dataset.category, { updateIntro: true, preserveViewport: true });
   });
 
   syncFilterState();
@@ -381,20 +541,38 @@ function setupLoadMore() {
 }
 
 function loadNextPage() {
-  if (!grid || isAutoLoading) return;
+  if (!grid || isLoadingMore) return;
 
   const items = getFilteredItems();
   if (visibleCount >= items.length) return;
 
-  isAutoLoading = true;
+  isLoadingMore = true;
+  const previousCount = visibleCount;
+  const nextCount = Math.min(visibleCount + PAGE_SIZE, items.length);
   loadMoreButton?.classList.add("is-loading");
-  visibleCount += PAGE_SIZE;
+  visibleCount = nextCount;
 
-  window.setTimeout(() => {
-    renderPortfolio();
+  requestAnimationFrame(() => {
+    let batch = grid.querySelector(".portfolio-batch");
+    if (!batch) {
+      grid.innerHTML = `<div class="portfolio-batch"></div>`;
+      batch = grid.querySelector(".portfolio-batch");
+    }
+    batch?.insertAdjacentHTML("beforeend", items.slice(previousCount, nextCount).map((item) => portfolioCardMarkup(item, "is-new")).join(""));
+    const newCards = [...grid.querySelectorAll(".portfolio-card")].slice(previousCount, nextCount);
+    newCards.forEach((card, index) => {
+      card.style.setProperty("--enter-delay", `${index * 85}ms`);
+      const image = card.querySelector("img");
+      if (image) image.loading = "eager";
+    });
+    newCards.forEach(setupMasonryImageLoad);
+    placeMasonryCards(newCards);
+    updateGalleryMeta(nextCount, items.length);
+    if (window.Fancybox) Fancybox.bind("[data-fancybox='portfolio']", {});
     loadMoreButton?.classList.remove("is-loading");
-    isAutoLoading = false;
-  }, 120);
+    isLoadingMore = false;
+    window.setTimeout(() => preloadNextPortfolioPage(items), 250);
+  });
 }
 
 function setupPortfolioIntroLinks() {
@@ -402,7 +580,7 @@ function setupPortfolioIntroLinks() {
     const categoryLink = event.target.closest("[data-intro-category]");
     if (categoryLink) {
       event.preventDefault();
-      setActiveCategory(categoryLink.dataset.introCategory, { shouldScroll: true });
+      setActiveCategory(categoryLink.dataset.introCategory, { shouldScroll: true, updateIntro: true });
       return;
     }
 
@@ -450,7 +628,10 @@ function renderAboutGallery() {
     `)
     .join("");
 
-  if (window.Fancybox) Fancybox.bind("[data-fancybox='about']", {});
+  if (window.Fancybox) {
+    Fancybox.bind("[data-fancybox='about']", {});
+    Fancybox.bind("[data-fancybox='en-accion']", {});
+  }
 }
 
 function setupMenu() {
@@ -527,6 +708,7 @@ renderCategoryList();
 renderAboutGallery();
 setupImageSizeControl();
 setupLoadMore();
+setupMasonryResize();
 setupPortfolioIntroLinks();
 setupCategoryLinks();
 setupMenu();

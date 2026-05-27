@@ -184,6 +184,7 @@ const categoryFolders = {
 };
 
 const aboutImages = [
-  "dist/assets/portfolio/sobre-mi/yo trabajando/coca cola -288.JPG",
-  "dist/assets/portfolio/sobre-mi/yo trabajando/coca cola -289.JPG"
+  "dist/assets/portfolio/sobre-mi/fernando-alfaro/auto-retartosn-235.jpg",
+  "dist/assets/portfolio/sobre-mi/fernando-alfaro/dsc07396.jpg",
+  "dist/assets/portfolio/retrato/retratos/retrato-fernando.jpg"
 ];
