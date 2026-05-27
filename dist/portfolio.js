@@ -57,6 +57,7 @@ const categoryLabels = {
   Bebidas: "Bebidas",
   Producto: "Producto",
   Retrato: "Retrato",
+  MiradaPersonal: "Mirada personal",
   Inmobiliaria: "Inmobiliaria",
 };
 
@@ -65,6 +66,7 @@ const categoryDescriptions = {
   Bebidas: "Fotografía de cócteles, bebidas y producto gastronómico.",
   Producto: "Imágenes para catálogo, campañas, redes sociales y marca.",
   Retrato: "Retratos limpios con dirección, carácter y presencia.",
+  MiradaPersonal: "Fotos hechas por curiosidad, fuera del trabajo y a mi manera.",
   Inmobiliaria: "Espacios, interiores y arquitectura listos para vender o reservar.",
 };
 
@@ -72,7 +74,7 @@ const categoryDetails = {
   Todo: {
     label: "Portafolio",
     title: "Aquí puedes ver un poco de mi trabajo de fotografía.",
-    text: "Una selección para escanear rápido mi forma de trabajar: color, composición, detalle y dirección visual para marcas, comida, producto, retrato e interiores.",
+    text: "Una selección para escanear rápido mi forma de trabajar: color, composición, detalle y dirección visual para marcas, comida, producto, retrato, interiores y una mirada más personal.",
     image: "dist/assets/portfolio/sobre-mi/fernando-alfaro/dsc07383.jpg",
     meta: "Fotografía comercial / El Salvador",
   },
@@ -103,6 +105,13 @@ const categoryDetails = {
     text: "Dirección sencilla, luz limpia y composición cuidada para retratos profesionales, editoriales o personales. La idea es que la persona se vea natural, clara y segura.",
     image: "dist/assets/portfolio/retrato/retratos/retratos-996.jpg",
     meta: "Retrato profesional / Marca personal",
+  },
+  MiradaPersonal: {
+    label: "Mirada personal",
+    title: "Una forma distinta de mirar el mundo.",
+    text: "Aparte del trabajo, también me gusta tomar fotos por gusto. Es una forma de ver el mundo diferente, a mi manera: sin encargo, sin brief, solo siguiendo la luz, los detalles y lo que me llama la atención.",
+    image: "dist/assets/portfolio/Mirada persona/DSC00902.JPG",
+    meta: "Fotos por hobby / Mirada propia",
   },
   Inmobiliaria: {
     label: "Inmobiliaria",
@@ -398,7 +407,7 @@ function preloadNextPortfolioPage(items = getFilteredItems()) {
 
 function updateGalleryMeta(visibleItemsCount, totalItemsCount) {
   if (galleryCount) {
-    galleryCount.textContent = `Mostrando ${visibleItemsCount} de ${totalItemsCount} fotos`;
+    galleryCount.textContent = totalItemsCount === 0 ? "Próximamente" : `Mostrando ${visibleItemsCount} de ${totalItemsCount} fotos`;
   }
 
   if (loadMoreButton) {
@@ -500,6 +509,18 @@ function renderPortfolio({ animateItems = false } = {}) {
   const items = getFilteredItems();
   const visibleItems = items.slice(0, visibleCount);
   masonryState = null;
+
+  if (items.length === 0) {
+    grid.innerHTML = `
+      <div class="portfolio-empty">
+        <p class="small-label">${categoryLabel(activeCategory)}</p>
+        <h2>Esta sección está guardando espacio para lo que viene.</h2>
+        <p>Pronto van aquí las fotos que hago por curiosidad, sin encargo y sin brief.</p>
+      </div>
+    `;
+    updateGalleryMeta(0, 0);
+    return;
+  }
 
   grid.innerHTML = `
     <div class="portfolio-batch">
@@ -649,11 +670,12 @@ function renderCategoryList() {
 
   categoryList.innerHTML = Object.keys(categoryFolders)
     .map((category) => {
+      const photoCount = categoryFolders[category].length;
       return `
         <a class="category-card" href="portfolio.html?category=${encodeURIComponent(category)}">
           <i></i>
           <h2>${categoryLabel(category)}</h2>
-          <strong>${categoryFolders[category].length} fotos</strong>
+          <strong>${photoCount === 0 ? "Próximamente" : `${photoCount} fotos`}</strong>
           <p>${categoryDescriptions[category]}</p>
         </a>
       `;
@@ -714,10 +736,11 @@ function setupContactLinks() {
 function setupServiceSliders() {
   serviceSliders.forEach((slider, sliderIndex) => {
     const image = slider.querySelector("img");
-    const gallery = slider.dataset.gallery?.split("|").filter(Boolean) || [];
+    const gallery = shuffleItems(slider.dataset.gallery?.split("|").filter(Boolean) || []);
     if (!image || gallery.length < 2) return;
 
-    let activeIndex = Math.max(0, gallery.indexOf(image.getAttribute("src")));
+    let activeIndex = 0;
+    image.src = gallery[activeIndex];
     let intervalId;
 
     const showImage = (direction) => {

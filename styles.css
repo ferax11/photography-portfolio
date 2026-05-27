@@ -351,6 +351,7 @@ section {
   min-height: 28rem;
   margin: 0;
   overflow: hidden;
+  border-radius: 12px;
   background: var(--surface);
 }
 
@@ -366,12 +367,19 @@ section {
 
 .home-hero .home-portrait img {
   object-position: center;
+  border-radius: 12px;
+  -webkit-clip-path: inset(0 round 12px);
+  clip-path: inset(0 round 12px);
 }
 
 .home-portrait img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: inherit;
+  -webkit-clip-path: inset(0 round 12px);
+  clip-path: inset(0 round 12px);
 }
 
 .home-copy {
@@ -641,15 +649,19 @@ section {
   overflow: hidden;
   border-radius: 14px;
   background: transparent;
+  transform: translateZ(0);
 }
 
 .service-image img {
+  display: block;
   width: 100%;
   height: auto;
   max-height: min(62vh, 36rem);
   object-fit: contain;
   border-radius: 14px;
+  -webkit-clip-path: inset(0 round 14px);
   clip-path: inset(0 round 14px);
+  overflow: hidden;
   transition: transform 700ms var(--ease);
 }
 
@@ -1030,6 +1042,30 @@ section {
   display: block;
 }
 
+.portfolio-empty {
+  display: grid;
+  min-height: 18rem;
+  align-content: center;
+  max-width: 46rem;
+  border-block: 1px solid var(--line);
+  padding: clamp(2rem, 5vw, 4rem) 0;
+}
+
+.portfolio-empty h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.8rem, 3.4vw, 3.2rem);
+  font-weight: 650;
+  line-height: 1.05;
+}
+
+.portfolio-empty p:not(.small-label) {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
 .portfolio-batch {
   display: block;
   position: relative;
@@ -1159,15 +1195,20 @@ section {
   background: transparent;
   animation: quickCategoryIn 260ms var(--ease) both;
   line-height: 0;
+  transform: translateZ(0);
 }
 
 .portfolio-intro-image img {
+  display: block;
   width: auto;
   max-width: 100%;
   height: auto;
   max-height: calc(100% - 0.35rem);
   object-fit: contain;
   border-radius: inherit;
+  -webkit-clip-path: inset(0 round 16px);
+  clip-path: inset(0 round 16px);
+  overflow: hidden;
 }
 
 .portfolio-intro-copy h1 {
@@ -2129,6 +2170,7 @@ section {
     width: min(100%, 24rem);
     height: clamp(13rem, 62vw, 20rem);
     max-height: 42svh;
+    border-radius: 14px;
   }
 
   .portfolio-intro-image img {
@@ -2137,6 +2179,9 @@ section {
     height: 100%;
     max-height: 64svh;
     object-fit: contain;
+    border-radius: inherit;
+    -webkit-clip-path: inset(0 round 14px);
+    clip-path: inset(0 round 14px);
   }
 
   .portfolio-intro {
@@ -2266,18 +2311,22 @@ section {
     aspect-ratio: auto;
     margin: 0.45rem auto 0;
     padding-inline: clamp(0.7rem, 4vw, 1.4rem);
+    border-radius: 14px;
     background: transparent;
     box-shadow: none;
   }
 
   .service-list .service-row .service-image img,
   .service-list .service-row:nth-of-type(odd) .service-image img {
+    display: block;
     width: 100%;
     height: auto;
     max-height: 50svh;
     object-fit: contain;
     border-radius: 14px;
+    -webkit-clip-path: inset(0 round 14px);
     clip-path: inset(0 round 14px);
+    overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   }
 
@@ -2332,12 +2381,15 @@ section {
   }
 
   .service-image img {
+    display: block;
     width: 100%;
     height: auto;
     max-height: 50svh;
     object-fit: contain;
     border-radius: 14px;
+    -webkit-clip-path: inset(0 round 14px);
     clip-path: inset(0 round 14px);
+    overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   }
 
@@ -2455,12 +2507,16 @@ section {
   }
 
   .hero-tags,
-  .category-overview,
   .featured-grid,
   .process-editorial-grid,
   .about-gallery,
   .faq-grid {
     grid-template-columns: 1fr;
+  }
+
+  .category-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
   }
 
   .faq-grid article:nth-child(2) {
@@ -2487,8 +2543,8 @@ section {
 
   .category-overview article,
   .category-card {
-    min-height: 12rem;
-    padding: 1.25rem;
+    min-height: 11.5rem;
+    padding: 1rem;
   }
 
   .category-overview h2 {
