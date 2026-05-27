@@ -4,10 +4,12 @@ const siteConfig = {
   quoteFormUrl: "https://tally.so/r/eqMNNl",
   email: "luisalfaro0110@gmail.com",
   socials: [
-    { label: "Instagram", url: "https://www.instagram.com/ferax_sv/", external: true },
-    { label: "Facebook", url: "https://www.facebook.com/profile.php?id=61587152510380", external: true },
+    { label: "Instagram", icon: "instagram", url: "https://www.instagram.com/ferax_sv/", external: true },
+    { label: "Facebook", icon: "facebook", url: "https://www.facebook.com/profile.php?id=61587152510380", external: true },
+    { label: "TikTok", icon: "tiktok", url: "https://www.tiktok.com/@ferax_sv", external: true },
     {
       label: "Correo",
+      icon: "mail",
       url: "https://mail.google.com/mail/?view=cm&fs=1&to=luisalfaro0110@gmail.com&su=Cotizaci%C3%B3n%20fotogr%C3%A1fica",
       external: true,
     },
@@ -25,6 +27,7 @@ const menuButton = document.querySelector("#menuButton");
 const mainMenu = document.querySelector("#mainMenu");
 const socialLinks = document.querySelector("#socialLinks");
 const socialFooterLinks = document.querySelector("#socialFooterLinks");
+const aboutSocialLinks = document.querySelector("#aboutSocialLinks");
 const whatsappLink = document.querySelector("#whatsappLink");
 const quoteFormLink = document.querySelector("#quoteFormLink");
 const quoteTopLink = document.querySelector("#quoteTopLink");
@@ -149,7 +152,23 @@ function optimizedPath(filePath) {
 
 function socialAnchor(social) {
   const target = social.external ? ' target="_blank" rel="noreferrer"' : "";
-  return `<a href="${social.url}"${target} aria-label="${social.label} de Fernando Alfaro">${social.label}</a>`;
+  return `
+    <a href="${social.url}"${target} aria-label="${social.label} de Fernando Alfaro">
+      <span class="social-icon" aria-hidden="true">${socialIcon(social.icon)}</span>
+      <span>${social.label}</span>
+    </a>
+  `;
+}
+
+function socialIcon(name) {
+  const icons = {
+    instagram: '<svg viewBox="0 0 24 24" focusable="false"><rect x="4" y="4" width="16" height="16" rx="5"></rect><circle cx="12" cy="12" r="3.5"></circle><circle cx="16.8" cy="7.2" r="0.9"></circle></svg>',
+    facebook: '<svg viewBox="0 0 24 24" focusable="false"><path d="M14.2 8.2h2.1V4.8c-.4-.1-1.6-.2-3-.2-3 0-5 1.8-5 5.1v2.8H5v3.8h3.3V24h4v-7.7h3.2l.5-3.8h-3.7V10c0-1.1.3-1.8 1.9-1.8z"></path></svg>',
+    tiktok: '<svg viewBox="0 0 24 24" focusable="false"><path d="M15.5 3c.4 3 2.1 4.8 5 5.1v3.4c-1.9.1-3.6-.5-5-1.6v6.3c0 3.2-2.4 5.8-5.8 5.8C6.6 22 4 19.6 4 16.5c0-3.4 2.8-5.9 6.5-5.6v3.5c-1.6-.2-2.8.7-2.8 2.1 0 1.2.9 2.1 2.1 2.1 1.4 0 2.2-.8 2.2-2.7V3h3.5z"></path></svg>',
+    mail: '<svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m4 7 8 6 8-6"></path></svg>',
+    whatsapp: '<svg viewBox="0 0 24 24" focusable="false"><path d="M4.5 19.5 5.8 16A7.8 7.8 0 1 1 9 19.1l-4.5.4z"></path><path d="M9.4 8.2c-.2-.5-.4-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.2 5 4.3 2.5.9 3 .7 3.6.6.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.3.2-1.4-.1-.1-.2-.2-.5-.4l-1.8-.9c-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.5-.6c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.6l-.8-1.8z"></path></svg>',
+  };
+  return icons[name] || icons.instagram;
 }
 
 function renderPortfolioIntro() {
@@ -295,20 +314,21 @@ function refreshPortfolioView({ shouldScroll = false, updateIntro = false, prese
   const anchorTop = anchor?.getBoundingClientRect().top;
   const transitionId = ++portfolioTransitionId;
   const introStartHeight = portfolioIntro?.offsetHeight;
+  const canAnimateIntro = animated && !window.matchMedia("(max-width: 700px)").matches;
 
   syncFilterState({ scrollActive: shouldScroll });
 
   const applyUpdate = () => {
     if (transitionId !== portfolioTransitionId) return;
 
-    if (portfolioIntro && animated && introStartHeight) {
+    if (portfolioIntro && canAnimateIntro && introStartHeight) {
       portfolioIntro.style.height = `${introStartHeight}px`;
     }
 
     if (updateIntro) renderPortfolioIntro();
     renderPortfolio({ animateItems: true });
 
-    if (portfolioIntro && animated && introStartHeight) {
+    if (portfolioIntro && canAnimateIntro && introStartHeight) {
       const introEndHeight = portfolioIntro.scrollHeight;
       portfolioIntro.style.height = `${introStartHeight}px`;
       portfolioIntro.offsetHeight;
@@ -504,6 +524,23 @@ function setupMasonryResize() {
 }
 
 function setupImageSizeControl() {
+  const applyResponsiveImageSize = () => {
+    const isMobile = window.matchMedia("(max-width: 700px)").matches;
+    if (isMobile) {
+      const mobileSize = Math.max(132, Math.floor((document.documentElement.clientWidth - 42) / 2));
+      document.documentElement.style.setProperty("--portfolio-image-size", `${mobileSize}px`);
+      requestAnimationFrame(() => layoutMasonry({ reset: true }));
+      return true;
+    }
+
+    return false;
+  };
+
+  if (applyResponsiveImageSize()) {
+    window.addEventListener("resize", applyResponsiveImageSize);
+    return;
+  }
+
   if (!imageSizeControl) return;
 
   const savedSize = window.localStorage?.getItem(IMAGE_SIZE_KEY);
@@ -514,6 +551,13 @@ function setupImageSizeControl() {
   imageSizeControl.addEventListener("input", () => {
     document.documentElement.style.setProperty("--portfolio-image-size", `${imageSizeControl.value}px`);
     window.localStorage?.setItem(IMAGE_SIZE_KEY, imageSizeControl.value);
+    requestAnimationFrame(() => layoutMasonry({ reset: true }));
+  });
+
+  window.addEventListener("resize", () => {
+    if (applyResponsiveImageSize()) return;
+    const currentSize = window.localStorage?.getItem(IMAGE_SIZE_KEY) || imageSizeControl.value;
+    document.documentElement.style.setProperty("--portfolio-image-size", `${currentSize}px`);
     requestAnimationFrame(() => layoutMasonry({ reset: true }));
   });
 }
@@ -528,7 +572,7 @@ function renderFilters() {
   filters.addEventListener("click", (event) => {
     const button = event.target.closest("[data-category]");
     if (!button) return;
-    setActiveCategory(button.dataset.category, { updateIntro: true, preserveViewport: true });
+    setActiveCategory(button.dataset.category, { updateIntro: true, preserveViewport: true, animated: false });
   });
 
   syncFilterState();
@@ -655,10 +699,14 @@ function setupContactLinks() {
     socialLinks.innerHTML = siteConfig.socials.map(socialAnchor).join("");
   }
 
+  if (aboutSocialLinks) {
+    aboutSocialLinks.innerHTML = siteConfig.socials.map(socialAnchor).join("");
+  }
+
   if (socialFooterLinks) {
     socialFooterLinks.innerHTML = [
       ...siteConfig.socials,
-      { label: "WhatsApp", url: whatsappUrl, external: true },
+      { label: "WhatsApp", icon: "whatsapp", url: whatsappUrl, external: true },
     ].map(socialAnchor).join("");
   }
 }
@@ -703,10 +751,10 @@ function setupServiceSliders() {
 
 renderFilters();
 renderPortfolioIntro();
-renderPortfolio();
 renderCategoryList();
 renderAboutGallery();
 setupImageSizeControl();
+renderPortfolio();
 setupLoadMore();
 setupMasonryResize();
 setupPortfolioIntroLinks();
