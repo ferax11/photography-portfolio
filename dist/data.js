@@ -139,7 +139,20 @@ const categoryFolders = {
     "dist/assets/portfolio/producto/flores/sesion-de-estudio-flores-jazmin-130.jpg",
     "dist/assets/portfolio/producto/flores/sesion-de-estudio-flores-jazmin-141.jpg",
     "dist/assets/portfolio/producto/flores/sesion-de-estudio-flores-jazmin-174.jpg",
-    "dist/assets/portfolio/producto/flores/sesion-de-estudio-flores-jazmin-203.jpg"
+    "dist/assets/portfolio/producto/flores/sesion-de-estudio-flores-jazmin-203.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -500.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -502.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -517.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -524.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -567.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -577.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -616.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -618.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -619.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -629.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -713.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -726.jpg",
+    "dist/assets/portfolio/producto/ONE/ONE camisas -730.jpg"
   ],
   "Retrato": [
     "dist/assets/portfolio/retrato/retratos/DSC00665.JPG",
@@ -157,7 +170,15 @@ const categoryFolders = {
     "dist/assets/portfolio/retrato/retratos/retratos-1002.jpg",
     "dist/assets/portfolio/retrato/retratos/retratos-984.jpg",
     "dist/assets/portfolio/retrato/retratos/retratos-991.jpg",
-    "dist/assets/portfolio/retrato/retratos/retratos-996.jpg"
+    "dist/assets/portfolio/retrato/retratos/retratos-996.jpg",
+    "dist/assets/portfolio/retrato/retratos/Alessandra Farma-1013.jpg",
+    "dist/assets/portfolio/retrato/retratos/Alessandra Farma-1075.jpg",
+    "dist/assets/portfolio/retrato/retratos/Alessandra Farma-1093.jpg",
+    "dist/assets/portfolio/retrato/retratos/Alessandra Farma-1100.jpg",
+    "dist/assets/portfolio/retrato/retratos/Alessandra Farma-1101.jpg",
+    "dist/assets/portfolio/retrato/retratos/Alessandra Farma-38.jpg",
+    "dist/assets/portfolio/retrato/retratos/Alessandra Farma-53.jpg",
+    "dist/assets/portfolio/retrato/retratos/Alessandra Farma-68.jpg"
   ],
   "MiradaPersonal": [
     "dist/assets/portfolio/Mirada persona/DSC00015.JPG",
